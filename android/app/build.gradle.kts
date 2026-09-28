@@ -1,7 +1,7 @@
 import java.io.FileInputStream
 import java.util.Properties
 
-// Written by build_client.sh from the TP_KEYSTORE_* environment variables and
+// Written by build_android.sh from the TP_KEYSTORE_* environment variables and
 // deleted again afterwards, so the signing secrets never live in the repo.
 val keystorePropertiesFile = rootProject.file("key.properties")
 val keystoreProperties = Properties().apply {
@@ -66,6 +66,30 @@ android {
         }
     }
 }
+
+// Version codes for the universal APK and the APKs split by ABI
+// (`flutter build apk --split-per-abi`): pubspec code * 10 plus a digit,
+// 0 for the universal APK and 1-3 per ABI. A device picks the highest code it
+// can run, so the digits climb with capability, and every later version
+// outranks every variant of an earlier one - whichever APK is installed, the
+// next release installs over it.
+//
+// Flutter would put abi * 1000 in front instead; the property turns that off
+// so there is exactly one scheme.
+extra["force-version-code-ignoring-abi"] = "true"
+
+val abiDigits = mapOf("armeabi-v7a" to 1, "arm64-v8a" to 2, "x86_64" to 3)
+
+@Suppress("DEPRECATION")
+(extensions.getByName("android") as com.android.build.gradle.AppExtension)
+    .applicationVariants.all {
+        val baseCode = versionCode
+        outputs.all {
+            val output = this as com.android.build.gradle.api.ApkVariantOutput
+            val abi = output.getFilter(com.android.build.VariantOutput.FilterType.ABI)
+            output.versionCodeOverride = baseCode * 10 + (abiDigits[abi] ?: 0)
+        }
+    }
 
 kotlin {
     compilerOptions {

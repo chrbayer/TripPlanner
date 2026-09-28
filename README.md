@@ -48,16 +48,26 @@ flutter test test/screenshot_test.dart --dart-define=OUT=/tmp/shots [--dart-defi
 ## Bauen
 
 ```sh
-./build_desktop.sh   # Linux → dist/trip_planner-<version>-linux-x64.tar.gz
-./build_client.sh    # Android → dist/trip_planner-<version>.apk
+./build_desktop.sh           # Linux → dist/trip_planner-<version>-linux-x64.tar.gz
+./build_android.sh           # Android → dist/trip_planner-<version>.apk (universal)
+./build_android.sh --github  # zusätzlich je eine APK pro ABI, alle ins GitHub-Release
 ```
 
 Beide Skripte nehmen die Version aus `pubspec.yaml` und bauen mit `--debug`
 eine Debug-Version.
 
+Die Android-`versionCode` ist Build-Nummer × 10 plus eine Ziffer: 0 für die
+universelle APK, 1 armeabi-v7a, 2 arm64-v8a, 3 x86_64. So lässt sich jede
+neuere Version über jede Variante einer älteren installieren.
+
+`--github` prüft vor dem Bauen: Keystore gesetzt, keine offenen Änderungen,
+HEAD steht auf dem Tag `v<version>` und der Tag ist auf GitHub. Dann baut es,
+prüft die Signaturen und lädt die APKs ins Release (legt es an, falls es noch
+nicht existiert). Vorhandene Dateien werden nie überschrieben.
+
 ### Android-Release signieren
 
-Der Release-Schlüssel liegt außerhalb des Repos. `build_client.sh` schreibt
+Der Release-Schlüssel liegt außerhalb des Repos. `build_android.sh` schreibt
 `android/key.properties` nur für die Dauer des Builds und prüft danach mit
 `apksigner`, welcher Schlüssel verwendet wurde. Im eigenen Terminal, nicht über
 ein Werkzeug, das die Eingaben mitliest:
@@ -65,7 +75,7 @@ ein Werkzeug, das die Eingaben mitliest:
 ```sh
 export TP_KEYSTORE_PASS="$(systemd-ask-password 'Kennwort:')"
 export TP_KEYSTORE_PATH=~/keys/tripplanner-release.jks
-./build_client.sh
+./build_android.sh --github
 ```
 
 Ohne `TP_KEYSTORE_PATH` wird mit dem Debug-Schlüssel signiert (mit Warnung).
