@@ -53,7 +53,24 @@ flutter test test/screenshot_test.dart --dart-define=OUT=/tmp/shots [--dart-defi
 ```
 
 Beide Skripte nehmen die Version aus `pubspec.yaml` und bauen mit `--debug`
-eine Debug-Version. Die Release-APK ist noch mit dem Debug-Schlüssel signiert.
+eine Debug-Version.
+
+### Android-Release signieren
+
+Der Release-Schlüssel liegt außerhalb des Repos. `build_client.sh` schreibt
+`android/key.properties` nur für die Dauer des Builds und prüft danach mit
+`apksigner`, welcher Schlüssel verwendet wurde. Im eigenen Terminal, nicht über
+ein Werkzeug, das die Eingaben mitliest:
+
+```sh
+export TP_KEYSTORE_PASS="$(systemd-ask-password 'Kennwort:')"
+export TP_KEYSTORE_PATH=~/keys/tripplanner-release.jks
+./build_client.sh
+```
+
+Ohne `TP_KEYSTORE_PATH` wird mit dem Debug-Schlüssel signiert (mit Warnung).
+Eine so installierte App lässt sich nicht durch eine richtig signierte
+aktualisieren.
 
 ## Hinweis Linux: App startet nicht, 100 % CPU
 
@@ -64,3 +81,7 @@ in `~/.cache/fontconfig`). Abhilfe:
 ```sh
 find ~/.cache/fontconfig -type l -name '*.cache-9' -delete && fc-cache -f
 ```
+
+## Lizenz
+
+GNU General Public License v3.0, siehe [LICENSE](LICENSE).
