@@ -49,6 +49,7 @@ flutter test test/screenshot_test.dart --dart-define=OUT=/tmp/shots [--dart-defi
 
 ```sh
 ./build_desktop.sh           # Linux → dist/trip_planner-<version>-linux-x64.tar.gz
+./build_desktop.sh --github  # zusätzlich ins GitHub-Release
 ./build_android.sh           # Android → dist/trip_planner-<version>.apk (universal)
 ./build_android.sh --github  # zusätzlich je eine APK pro ABI, alle ins GitHub-Release
 ```
@@ -60,10 +61,11 @@ Die Android-`versionCode` ist Build-Nummer × 10 plus eine Ziffer: 0 für die
 universelle APK, 1 armeabi-v7a, 2 arm64-v8a, 3 x86_64. So lässt sich jede
 neuere Version über jede Variante einer älteren installieren.
 
-`--github` prüft vor dem Bauen: Keystore gesetzt, keine offenen Änderungen,
-HEAD steht auf dem Tag `v<version>` und der Tag ist auf GitHub. Dann baut es,
-prüft die Signaturen und lädt die APKs ins Release (legt es an, falls es noch
-nicht existiert). Vorhandene Dateien werden nie überschrieben.
+`--github` prüft bei beiden Skripten vor dem Bauen: keine offenen Änderungen,
+HEAD steht auf dem Tag `v<version>` und der Tag ist auf GitHub, bei Android
+zusätzlich, dass ein Keystore gesetzt ist. Dann baut es, prüft bei Android die
+Signaturen und lädt die Dateien ins Release (legt es an, falls es noch nicht
+existiert). Vorhandene Dateien werden nie überschrieben.
 
 ### Android-Release signieren
 
@@ -81,6 +83,24 @@ export TP_KEYSTORE_PATH=~/keys/tripplanner-release.jks
 Ohne `TP_KEYSTORE_PATH` wird mit dem Debug-Schlüssel signiert (mit Warnung).
 Eine so installierte App lässt sich nicht durch eine richtig signierte
 aktualisieren.
+
+## Veröffentlichen
+
+1. In `pubspec.yaml` Version und Build-Nummer anheben, z. B. `0.1.2+3`.
+2. `flutter analyze` und `flutter test` müssen ohne Befund durchlaufen.
+3. Committen, taggen, pushen:
+   ```sh
+   git add -A && git commit -m "Version 0.1.2"
+   git tag -a v0.1.2 -m "Version 0.1.2"
+   git push origin master && git push origin v0.1.2
+   ```
+4. Im eigenen Terminal bauen und hochladen:
+   ```sh
+   export TP_KEYSTORE_PASS="$(systemd-ask-password 'Kennwort:')"
+   export TP_KEYSTORE_PATH=~/keys/tripplanner-release.jks
+   ./build_android.sh --github && ./build_desktop.sh --github
+   ```
+5. Die Release-Notizen auf GitHub ergänzen (`gh release edit v0.1.2 --notes-file …`).
 
 ## Hinweis Linux: App startet nicht, 100 % CPU
 
